@@ -46,7 +46,7 @@ class Tupla:
             print(i)
 
     def relacionar(self):
-        print("No se pemiten mas de 3 relaciones, el vacio se representa con v y los estados se separan por coma")
+        print("No se pemiten mas de 3 relaciones, el vacio se representa con \"v,\"y los estados se separan por coma")
         for i in self.__lista:
            print("___________________________________")
            q=i[0]
@@ -59,53 +59,85 @@ class Tupla:
         lista=string.split(',')
         return lista
 
-    def comparar_cadenas(self,cadena1,cadena2):
-        cadena1=self.convertir(cadena1)
-        cadena2 = self.convertir(cadena2)
+    def comparar_listas(self,cadena1,cadena2):
+       # cadena1=self.convertir(cadena1)
+        #cadena2 = self.convertir(cadena2)
         elementos=len(cadena1)
         if len(cadena2)==len(cadena1):
             aux=0
+            aux2=0
             for i in cadena1:
                 if i in cadena2:
                     aux+=1
-            if aux==elementos:
+            for i in cadena2:
+                if i in cadena1:
+                    aux2+=1
+            if aux==elementos and aux2==elementos:
                 return True
             else:
                 return False
         else:
             return False
 
+    def esta_en_lista(self,lista,cadena):
+        lista=list(lista)
+        cadena=str(cadena)
+        cadena=self.convertir(cadena)
+        bandera=False
+        for i in lista:
+            i=self.convertir(i)
+            bandera=self.comparar_listas(cadena,i)
+        return bandera
+
     def transformar_a_determinista2(self):
         if self.es_determinista:
-            cambios=1
+            sin_terminar=True
             estado_transformar=""
             sub_indice=len(self.__lista)
-            for i in self.__lista:   #se busca un estado que no sea determinista q
-                for j in  i:         #j es un objeto de tipo string
-                    if ','in j or 'v' in j:    #detecta si hay un vacio o una coma en la cadena
-                        estado_transformar=j
-                        break
-            nuevo="q"+str(sub_indice) #se remplazan todos los valores que fueron no deterministas por un nuevo estad0
-            sub_indice+=sub_indice
-            for i in range(len(self.__lista)):
-                for j in range(3):
-                    #if self.__lista[i][j]==estado_transformar:
-                    if self.comparar_cadenas(self.__lista[i][j],estado_transformar):
-                        self.__lista[i][j]=nuevo#cambua el estado anterior por el nuevo #se remplazan las cadenas por una nueva cadena r
+            while sin_terminar:
+                for i in self.__lista:   #se busca un estado que no sea determinista q
+                    for j in  i:         #j es un objeto de tipo string
+                        if ','in j or 'v' in j:    #detecta si hay un vacio o una coma en la cadena
+                            estado_transformar=j
+                            sin_terminar=True
+                            break
+                        else:
+                            sin_terminar=False
+                nuevo="q"+str(sub_indice) #se remplazan todos los valores que fueron no deterministas por un nuevo estad0
+                sub_indice+=1
+                for i in range(len(self.__lista)):
+                    for j in range(3):
+                        #if self.__lista[i][j]==estado_transformar:
+                        if self.comparar_listas(self.convertir(self.__lista[i][j]),self.convertir(estado_transformar)):
+                            self.__lista[i][j]=nuevo#cambua el estado anterior por el nuevo #se remplazan las cadenas por una nueva cadena r
+
+    def generar_estados(self):
+        if self.es_determinista:
+            fin=True
+            estado=""
+            while fin:
+                for i in self.__lista:   #se busca un estado que no sea determinista q
+                    for j in  i:         #j es un objeto de tipo string
+                        if ','in j or 'v' in j:    #detecta si hay un vacio o una coma en la cadena
+                            estado_transformar=j
+                            fin=True
+                            break
+                        else:
+                            fin=False
 
 
 
 tupla=Tupla(False)
+print(tupla.esta_en_lista(["q1,q2"],"q1,q2"))
+breakpoint()
+tupla.insertarEstados(2)
 
-n=int(input("inserte un numero de estados < 8"))
-tupla.insertarEstados(n)
 tupla.relacionar()
+tupla.generar_estados()
 tupla.mostrar()
+
 i=0
-while i<n*3:
-    tupla.transformar_a_determinista2()
-    tupla.mostrar()
-    i+=1
+tupla.transformar_a_determinista2()
 tupla.mostrar()
 
 
