@@ -1,11 +1,13 @@
+from graph.Graph import *
+
 
 
 class Tupla:
-
-    def __init__(self,tipo):
+    def __init__(self,tipo,default):
         self.__lista = []
         self.__tipo = tipo
         self.__estados_agregados=[]
+        self.__vacio_default=default
     def es_determinista(self):
         return self.__tipo
 
@@ -30,15 +32,15 @@ class Tupla:
             i = 0
             for j in self.__lista:
                 if j[0] == q:
-                    j.append(A)
-                    j.append(B)
+                    j.append(self.cadena_simple(A))
+                    j.append(self.cadena_simple(B))
             return True
         elif not self.es_determinista() and  len(aux)<=3 and len(aux1)<=3:
             i = 0
             for j in self.__lista:
                 if  j[0]==q:
-                    j.append(A)
-                    j.append(B)
+                    j.append(self.cadena_simple(A))
+                    j.append(self.cadena_simple(B))
             return True
         else:
             print("condicion no valida mas de 3 relaciones")
@@ -157,11 +159,12 @@ class Tupla:
                         """proceso complejo pero no tanto"""
                         if estado !=vacio:
                             if not self.esta_en_lista(self.__estados_agregados,estado):
+                                print("se inserta estado no determinisra encontrado")
                                 lista=self.__proceso_uno(estado)#proceso mega mamalon y POJO  :c
                                 """termina"""
                                 nuevos.append(lista)
                         else:
-                            nuevos.append(["v","q0","v"])
+                            nuevos.append(["v",self.__vacio_default[0],self.__vacio_default[1]])
             lista_auxiliar=[]
             for i in nuevos:
                 if  not self.esta_en_lista(lista_auxiliar,i[0]):
@@ -176,10 +179,8 @@ class Tupla:
             for i in listaEstadosNoDeterministas:
                 print(i)
                 self.__estados_agregados.append(i[0])
-
             for estado in listaEstadosNoDeterministas:
                 self.__lista.append(estado)
-
             return  len(lista_auxiliar)
         else:
             print("su cochinada ya es determinista")
@@ -216,9 +217,9 @@ class Tupla:
         if "v" not in q:
             ultimo_estado=str(q)
             ultimo_estado = ultimo_estado.split("q")
-            print(ultimo_estado)
+
             ultimo_estado = int(ultimo_estado[1])
-            print("ultimo estado",ultimo_estado)
+
             return ultimo_estado
 
     def __retorna_ultimo_nodeterminista(self):
@@ -231,6 +232,9 @@ class Tupla:
         ultimo_estado= ordenada[len(ordenada)-1]
         return self.__devolver_indice(ultimo_estado)
 
+    """
+    !!!bugg en caso de ce eje,plo: q1,q1,q1   q2,q2,q2   qn,qn,qn   devuelve A ="" y B="
+    """
     def __proceso_uno(self,estado):
         estado =str(estado)
         aux = []
@@ -274,39 +278,79 @@ class Tupla:
 
     def __buscar_relacion_A(self,q):
         for i in self.__lista:
-            if q==i[0] and i[1]!="v":
+            if q==i[0] and i[1] !="v":
                 return i[1]+","
             else:
                 return ""
-
-
     def __buscar_relacion_B(self,q):
         for i in self.__lista:
-            if q==i[0] and i[2]!="v":
+            if q==i[0] and i[2] != "v" :
                 return i[2]+","
             else:
                 return ""
+
+    def cadena_simple(self,cadena):
+        cadena=str(cadena)
+        cadena=cadena.split(",")
+        print("cadena sin simplificar",cadena)
+        aux=[]
+        for i in cadena:
+            if i not in aux:
+                aux.append(i)
+        cadena=self.__convertir_a_string(aux)
+        print("cadena simplificada",cadena)
+        return cadena
+
+
+    def __obtener_datos_grafo(self):
+        total={"t":[],"s":[],"w":[]}
+        #para obtener nodos que envian
+        for i in self.__lista:
+           #para a
+            aux=i[0].split("q")
+            total["s"].append(aux[1])
+            aux = i[1].split("q")
+            total["t"].append(aux[1])
+            total["w"].append(0)
+            #para b
+            aux = i[0].split("q")
+            total["s"].append(aux[1])
+            aux = i[2].split("q")
+            total["t"].append(aux[1])
+            total["w"].append(1)
+        print(total)
+        return total
+        #obtener targets
+        target=[]
+
+    def generar_grafo(self):
+        grafo=Graph(self.__obtener_datos_grafo()["s"],self.__obtener_datos_grafo()["t"],self.__obtener_datos_grafo()["w"])
+        grafo.draw(True)
+
 
 def main():
     TIPO=True
     while True:
         print("bienvenido escoja su tipo de automata finito 1=determinista, 0=no determinista")
+
         tipo=int(input())
         if tipo==1:
             TIPO=True
             print("su automata es determinista y no puede insertar mas de una relacion, ni vacios")
-            tupla=Tupla(TIPO)
+            tupla=Tupla(TIPO,["q1","q0"])
             numero_estados=int(input("inserte numeros de estados menor a 8 se nombraran automaticamente como qn"))
             tupla.insertarEstados(numero_estados)
             print("inserte relaciones no pueden ser mas de 3")
             tupla.relacionar()
             print("la tupla es la siguiente")
             tupla.mostrar()
+            tupla.generar_grafo()
 
         elif tipo==0:
             TIPO=False
+
             print("su automata es NO determinista y puede insertar hasta 3 relaciones")
-            tupla = Tupla(TIPO)
+            tupla = Tupla(TIPO,["q1","q0"])
             numero_estados = int(input("inserte numeros de estados menor a 8 se nombraran automaticamente como qn"))
             tupla.insertarEstados(numero_estados)
             print("inserte relaciones")
@@ -316,7 +360,11 @@ def main():
             print("la transformacion a determinista es la siguiente...")
             print("la transformacion a determinista es la siguiente...")
             tupla.ciclo_transformaciones()
+
+
             tupla.mostrar()
+            tupla.generar_grafo()
+
 
 
 
