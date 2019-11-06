@@ -5,7 +5,7 @@ class Tupla:
     def __init__(self,tipo):
         self.__lista = []
         self.__tipo = tipo
-
+        self.__estados_agregados=[]
     def es_determinista(self):
         return self.__tipo
 
@@ -102,16 +102,15 @@ class Tupla:
                 return True
 
 
-    def transformar_a_determinista2(self,estados_nuevos):
+    def transformar_a_determinista2(self,ultimo_indice):
         if self.es_determinista:
             fin=True
             estado_transformar=""
-            sub_indice=len(self.__lista)-estados_nuevos
+            sub_indice=ultimo_indice+1
             while fin:
                 for i in self.__lista:
                     if "," in i[0]  or "v" in i[0]:
                         estado_transformar=i[0]
-                        print("a transformar",estado_transformar)
                         fin=True
                         break
                     else:
@@ -123,44 +122,114 @@ class Tupla:
                     aux=self.__lista[i]
                     for j in range(len(aux)):
                         if self.__comparar_listas(self.__convertir(self.__lista[i][j]),self.__convertir(estado_transformar)):
-                            print(f"{self.__lista[i][j]}=={estado_transformar}")
                             self.__lista[i][j]=nuevo
+
+    def transformar_a_determinista(self):
+        if self.es_determinista:
+            fin = True
+            estado_transformar = ""
+
+            while fin:
+                for i in self.__lista:
+                    if "," in i[0] or "v" in i[0]:
+                        estado_transformar = i[0]
+                        fin = True
+                        break
+                    else:
+                        fin = False
+                for i in range(len(self.__lista)):
+                    aux = self.__lista[i]
+                    for j in range(len(aux)):
+                        if self.__comparar_listas(self.__convertir(self.__lista[i][j]),
+                                                  self.__convertir(estado_transformar)):
+                            self.__lista[i][j] = str(self.__lista[i][j]).strip(",")
 
     def generar_estados(self):
         if self.es_determinista:
-
+            vacio="v"
             estado=""
             listaEstadosNoDeterministas=[]
             nuevos=[]
             for i in self.__lista:   #se busca un estado que no sea determinista q
-                for j in  i:         #j es un objeto de tipo string
-                    if ','in j or 'v' in j:    #detecta si hay un vacio o una coma en la cadena
-                        estado=j
+                for j in  range(1,len(i)):         #j es un objeto de tipo string
+                    if ','in i[j] or vacio in i[j]:    #detecta si hay un vacio o una coma en la cadena
+                        estado=i[j]
                         """proceso complejo pero no tanto"""
-                        if estado !='v':
-                            lista=self.__proceso_uno(estado)#proceso mega mamalon y POJO  :c
-                            """termina"""
-                            nuevos.append(lista)
+                        if estado !=vacio:
+                            if not self.esta_en_lista(self.__estados_agregados,estado):
+                                lista=self.__proceso_uno(estado)#proceso mega mamalon y POJO  :c
+                                """termina"""
+                                nuevos.append(lista)
                         else:
                             nuevos.append(["v","q0","v"])
             lista_auxiliar=[]
             for i in nuevos:
                 if  not self.esta_en_lista(lista_auxiliar,i[0]):
                     lista_auxiliar.append(i[0])
-
             print(f"estados a convertir>>>>>{lista_auxiliar}<<<<\n")
             for i in lista_auxiliar:
                 for j in nuevos:
                     if j[0]==i:
                         listaEstadosNoDeterministas.append(j)
-            print(f"estados no deterministas nuevos \n{listaEstadosNoDeterministas}\n")
-            print(f"lista sin estados\n{self.__lista}\n")
+                        break
+            print(f"estados no deterministas nuevos \n")
+            for i in listaEstadosNoDeterministas:
+                print(i)
+                self.__estados_agregados.append(i[0])
+
             for estado in listaEstadosNoDeterministas:
                 self.__lista.append(estado)
 
             return  len(lista_auxiliar)
         else:
             print("su cochinada ya es determinista")
+
+    def ciclo_transformaciones(self):
+       fsin=True
+       lista_registrados = []
+       while fsin:
+
+            for i in self.__lista:
+                print(i[0])
+                lista_registrados.append(i[0])
+            for i in self.__lista:  # se busca un estado que no sea determinista q
+                for j in i:  # j es un objeto de tipo string
+                    if not self.esta_en_lista(lista_registrados,j):  # detecta si hay un vacio o una coma en la cadena
+                        print("se generan estados")
+                        print("lista estados registrados",lista_registrados)
+                        self.generar_estados()
+                        for i in self.__lista:
+                            if not self.esta_en_lista(lista_registrados,i[0]):
+                                lista_registrados.append(i[0])
+                        self.mostrar()
+                        fsin=True
+                        break
+                    else:
+                        fsin=False
+
+
+       self.transformar_a_determinista2(self.__retorna_ultimo_nodeterminista())
+       self.transformar_a_determinista()
+       self.mostrar()
+
+    def __devolver_indice(self,q):
+        if "v" not in q:
+            ultimo_estado=str(q)
+            ultimo_estado = ultimo_estado.split("q")
+            print(ultimo_estado)
+            ultimo_estado = int(ultimo_estado[1])
+            print("ultimo estado",ultimo_estado)
+            return ultimo_estado
+
+    def __retorna_ultimo_nodeterminista(self):
+        lista=[]
+        for i in self.__lista:
+            for j in i:
+                if "," not in j and "v"not in j:
+                    lista.append(j)
+        ordenada=sorted(lista)
+        ultimo_estado= ordenada[len(ordenada)-1]
+        return self.__devolver_indice(ultimo_estado)
 
     def __proceso_uno(self,estado):
         estado =str(estado)
@@ -205,13 +274,18 @@ class Tupla:
 
     def __buscar_relacion_A(self,q):
         for i in self.__lista:
-            if q==i[0]:
+            if q==i[0] and i[1]!="v":
                 return i[1]+","
+            else:
+                return ""
+
 
     def __buscar_relacion_B(self,q):
         for i in self.__lista:
-            if q==i[0]:
+            if q==i[0] and i[2]!="v":
                 return i[2]+","
+            else:
+                return ""
 
 def main():
     TIPO=True
@@ -240,11 +314,8 @@ def main():
             print("la tupla es la siguiente")
             tupla.mostrar()
             print("la transformacion a determinista es la siguiente...")
-
-            cambios = tupla.generar_estados()
-            tupla.mostrar()
-            print("la transformacion simplificada queda...")
-            tupla.transformar_a_determinista2(cambios)
+            print("la transformacion a determinista es la siguiente...")
+            tupla.ciclo_transformaciones()
             tupla.mostrar()
 
 
